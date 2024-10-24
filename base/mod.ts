@@ -28,7 +28,7 @@ type Count<
  * @param anyPath Any path
  * @returns Specific path
  */
-export function getPathName(anyPath: string) {
+export function getPathName(anyPath: string): string | undefined {
   const segments = anyPath.split("/");
 
   const list =
@@ -63,7 +63,7 @@ export interface Options {
   authentication: {
     rauth?: string | undefined;
     revolt?: { token: string } | string | undefined;
-    headers?: Record<string, string> | undefined; // Adjusted from AxiosRequestConfig['headers']
+    headers?: Record<string, string> | undefined;
   };
 }
 
@@ -123,8 +123,8 @@ export class API {
   >(
     method: Method,
     path: Path,
-    params?: Route["params"], // Allow params to be optional
-    config?: RequestInit,
+    params?: Route["params"],
+    _config?: RequestInit,
   ): Promise<Route["response"]> {
     let query: Record<string, any> | undefined;
     let body: Record<string, any> | undefined;

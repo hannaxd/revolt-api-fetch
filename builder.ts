@@ -24,7 +24,7 @@ Deno.readTextFile("openapi.json").then((data) => {
 
   {
     const entries = [
-      "import { paths } from './schema.ts';",
+      "import type { paths } from './schema.ts';",
       "export type APIRoutes =",
     ];
     const paths = Object.keys(spec.paths);

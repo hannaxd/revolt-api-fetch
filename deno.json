@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "exports": "./out/mod.ts",
   "tasks": {
-    "build": "REWRITE_ANYOF=1 deno -A builder.ts"
+    "build": "REWRITE_ANYOF=1 deno -A builder.ts && deno fmt out/"
   },
   "license": "MIT",
   "imports": {

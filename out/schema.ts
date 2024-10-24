@@ -2,8 +2,12 @@
 
 /** OneOf type helpers */
 type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
-type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
-type OneOf<T extends unknown[]> = T extends [infer Only] ? Only : T extends [infer A, infer B, ...infer Rest] ? OneOf<[XOR<A, B>, ...Rest]> : never;
+type XOR<T, U> = (T | U) extends object
+  ? (Without<T, U> & U) | (Without<U, T> & T)
+  : T | U;
+type OneOf<T extends unknown[]> = T extends [infer Only] ? Only
+  : T extends [infer A, infer B, ...infer Rest] ? OneOf<[XOR<A, B>, ...Rest]>
+  : never;
 
 export interface paths {
   "/": {
@@ -808,198 +812,200 @@ export interface components {
      * Error
      * @description Error information
      */
-    Error: {
-      /** @description Where this error occurred */
-      location: string;
-    } & ({
-      /** @enum {string} */
-      type: "LabelMe";
-    } | {
-      /** @enum {string} */
-      type: "AlreadyOnboarded";
-    } | {
-      /** @enum {string} */
-      type: "UsernameTaken";
-    } | {
-      /** @enum {string} */
-      type: "InvalidUsername";
-    } | {
-      /** @enum {string} */
-      type: "DiscriminatorChangeRatelimited";
-    } | {
-      /** @enum {string} */
-      type: "UnknownUser";
-    } | {
-      /** @enum {string} */
-      type: "AlreadyFriends";
-    } | {
-      /** @enum {string} */
-      type: "AlreadySentRequest";
-    } | {
-      /** @enum {string} */
-      type: "Blocked";
-    } | {
-      /** @enum {string} */
-      type: "BlockedByOther";
-    } | {
-      /** @enum {string} */
-      type: "NotFriends";
-    } | {
-      /** @enum {string} */
-      type: "TooManyPendingFriendRequests";
-      /** Format: uint */
-      max: number;
-    } | {
-      /** @enum {string} */
-      type: "UnknownChannel";
-    } | {
-      /** @enum {string} */
-      type: "UnknownAttachment";
-    } | {
-      /** @enum {string} */
-      type: "UnknownMessage";
-    } | {
-      /** @enum {string} */
-      type: "CannotEditMessage";
-    } | {
-      /** @enum {string} */
-      type: "CannotJoinCall";
-    } | {
-      /** @enum {string} */
-      type: "TooManyAttachments";
-      /** Format: uint */
-      max: number;
-    } | {
-      /** @enum {string} */
-      type: "TooManyEmbeds";
-      /** Format: uint */
-      max: number;
-    } | {
-      /** @enum {string} */
-      type: "TooManyReplies";
-      /** Format: uint */
-      max: number;
-    } | {
-      /** @enum {string} */
-      type: "TooManyChannels";
-      /** Format: uint */
-      max: number;
-    } | {
-      /** @enum {string} */
-      type: "EmptyMessage";
-    } | {
-      /** @enum {string} */
-      type: "PayloadTooLarge";
-    } | {
-      /** @enum {string} */
-      type: "CannotRemoveYourself";
-    } | {
-      /** @enum {string} */
-      type: "GroupTooLarge";
-      /** Format: uint */
-      max: number;
-    } | {
-      /** @enum {string} */
-      type: "AlreadyInGroup";
-    } | {
-      /** @enum {string} */
-      type: "NotInGroup";
-    } | {
-      /** @enum {string} */
-      type: "UnknownServer";
-    } | {
-      /** @enum {string} */
-      type: "InvalidRole";
-    } | {
-      /** @enum {string} */
-      type: "Banned";
-    } | {
-      /** @enum {string} */
-      type: "TooManyServers";
-      /** Format: uint */
-      max: number;
-    } | {
-      /** @enum {string} */
-      type: "TooManyEmoji";
-      /** Format: uint */
-      max: number;
-    } | {
-      /** @enum {string} */
-      type: "TooManyRoles";
-      /** Format: uint */
-      max: number;
-    } | {
-      /** @enum {string} */
-      type: "AlreadyInServer";
-    } | {
-      /** @enum {string} */
-      type: "ReachedMaximumBots";
-    } | {
-      /** @enum {string} */
-      type: "IsBot";
-    } | {
-      /** @enum {string} */
-      type: "BotIsPrivate";
-    } | {
-      /** @enum {string} */
-      type: "CannotReportYourself";
-    } | {
-      /** @enum {string} */
-      type: "MissingPermission";
-      permission: string;
-    } | {
-      /** @enum {string} */
-      type: "MissingUserPermission";
-      permission: string;
-    } | {
-      /** @enum {string} */
-      type: "NotElevated";
-    } | {
-      /** @enum {string} */
-      type: "NotPrivileged";
-    } | {
-      /** @enum {string} */
-      type: "CannotGiveMissingPermissions";
-    } | {
-      /** @enum {string} */
-      type: "NotOwner";
-    } | {
-      /** @enum {string} */
-      type: "DatabaseError";
-      operation: string;
-      collection: string;
-    } | {
-      /** @enum {string} */
-      type: "InternalError";
-    } | {
-      /** @enum {string} */
-      type: "InvalidOperation";
-    } | {
-      /** @enum {string} */
-      type: "InvalidCredentials";
-    } | {
-      /** @enum {string} */
-      type: "InvalidProperty";
-    } | {
-      /** @enum {string} */
-      type: "InvalidSession";
-    } | {
-      /** @enum {string} */
-      type: "DuplicateNonce";
-    } | {
-      /** @enum {string} */
-      type: "NotFound";
-    } | {
-      /** @enum {string} */
-      type: "NoEffect";
-    } | {
-      /** @enum {string} */
-      type: "FailedValidation";
-      error: string;
-    } | {
-      /** @enum {string} */
-      type: "VosoUnavailable";
-    });
+    Error:
+      & {
+        /** @description Where this error occurred */
+        location: string;
+      }
+      & ({
+        /** @enum {string} */
+        type: "LabelMe";
+      } | {
+        /** @enum {string} */
+        type: "AlreadyOnboarded";
+      } | {
+        /** @enum {string} */
+        type: "UsernameTaken";
+      } | {
+        /** @enum {string} */
+        type: "InvalidUsername";
+      } | {
+        /** @enum {string} */
+        type: "DiscriminatorChangeRatelimited";
+      } | {
+        /** @enum {string} */
+        type: "UnknownUser";
+      } | {
+        /** @enum {string} */
+        type: "AlreadyFriends";
+      } | {
+        /** @enum {string} */
+        type: "AlreadySentRequest";
+      } | {
+        /** @enum {string} */
+        type: "Blocked";
+      } | {
+        /** @enum {string} */
+        type: "BlockedByOther";
+      } | {
+        /** @enum {string} */
+        type: "NotFriends";
+      } | {
+        /** @enum {string} */
+        type: "TooManyPendingFriendRequests";
+        /** Format: uint */
+        max: number;
+      } | {
+        /** @enum {string} */
+        type: "UnknownChannel";
+      } | {
+        /** @enum {string} */
+        type: "UnknownAttachment";
+      } | {
+        /** @enum {string} */
+        type: "UnknownMessage";
+      } | {
+        /** @enum {string} */
+        type: "CannotEditMessage";
+      } | {
+        /** @enum {string} */
+        type: "CannotJoinCall";
+      } | {
+        /** @enum {string} */
+        type: "TooManyAttachments";
+        /** Format: uint */
+        max: number;
+      } | {
+        /** @enum {string} */
+        type: "TooManyEmbeds";
+        /** Format: uint */
+        max: number;
+      } | {
+        /** @enum {string} */
+        type: "TooManyReplies";
+        /** Format: uint */
+        max: number;
+      } | {
+        /** @enum {string} */
+        type: "TooManyChannels";
+        /** Format: uint */
+        max: number;
+      } | {
+        /** @enum {string} */
+        type: "EmptyMessage";
+      } | {
+        /** @enum {string} */
+        type: "PayloadTooLarge";
+      } | {
+        /** @enum {string} */
+        type: "CannotRemoveYourself";
+      } | {
+        /** @enum {string} */
+        type: "GroupTooLarge";
+        /** Format: uint */
+        max: number;
+      } | {
+        /** @enum {string} */
+        type: "AlreadyInGroup";
+      } | {
+        /** @enum {string} */
+        type: "NotInGroup";
+      } | {
+        /** @enum {string} */
+        type: "UnknownServer";
+      } | {
+        /** @enum {string} */
+        type: "InvalidRole";
+      } | {
+        /** @enum {string} */
+        type: "Banned";
+      } | {
+        /** @enum {string} */
+        type: "TooManyServers";
+        /** Format: uint */
+        max: number;
+      } | {
+        /** @enum {string} */
+        type: "TooManyEmoji";
+        /** Format: uint */
+        max: number;
+      } | {
+        /** @enum {string} */
+        type: "TooManyRoles";
+        /** Format: uint */
+        max: number;
+      } | {
+        /** @enum {string} */
+        type: "AlreadyInServer";
+      } | {
+        /** @enum {string} */
+        type: "ReachedMaximumBots";
+      } | {
+        /** @enum {string} */
+        type: "IsBot";
+      } | {
+        /** @enum {string} */
+        type: "BotIsPrivate";
+      } | {
+        /** @enum {string} */
+        type: "CannotReportYourself";
+      } | {
+        /** @enum {string} */
+        type: "MissingPermission";
+        permission: string;
+      } | {
+        /** @enum {string} */
+        type: "MissingUserPermission";
+        permission: string;
+      } | {
+        /** @enum {string} */
+        type: "NotElevated";
+      } | {
+        /** @enum {string} */
+        type: "NotPrivileged";
+      } | {
+        /** @enum {string} */
+        type: "CannotGiveMissingPermissions";
+      } | {
+        /** @enum {string} */
+        type: "NotOwner";
+      } | {
+        /** @enum {string} */
+        type: "DatabaseError";
+        operation: string;
+        collection: string;
+      } | {
+        /** @enum {string} */
+        type: "InternalError";
+      } | {
+        /** @enum {string} */
+        type: "InvalidOperation";
+      } | {
+        /** @enum {string} */
+        type: "InvalidCredentials";
+      } | {
+        /** @enum {string} */
+        type: "InvalidProperty";
+      } | {
+        /** @enum {string} */
+        type: "InvalidSession";
+      } | {
+        /** @enum {string} */
+        type: "DuplicateNonce";
+      } | {
+        /** @enum {string} */
+        type: "NotFound";
+      } | {
+        /** @enum {string} */
+        type: "NoEffect";
+      } | {
+        /** @enum {string} */
+        type: "FailedValidation";
+        error: string;
+      } | {
+        /** @enum {string} */
+        type: "VosoUnavailable";
+      });
     /** @description User */
     User: {
       /** @description Unique Id */
@@ -1102,7 +1108,14 @@ export interface components {
      * @description User's relationship with another user (or themselves)
      * @enum {string}
      */
-    RelationshipStatus: "None" | "User" | "Friend" | "Outgoing" | "Incoming" | "Blocked" | "BlockedOther";
+    RelationshipStatus:
+      | "None"
+      | "User"
+      | "Friend"
+      | "Outgoing"
+      | "Incoming"
+      | "Blocked"
+      | "BlockedOther";
     /** @description User's active status */
     UserStatus: {
       /** @description Custom status text */
@@ -1167,7 +1180,13 @@ export interface components {
      * @description Optional fields on user object
      * @enum {string}
      */
-    FieldsUser: "Avatar" | "StatusText" | "StatusPresence" | "ProfileContent" | "ProfileBackground" | "DisplayName";
+    FieldsUser:
+      | "Avatar"
+      | "StatusText"
+      | "StatusPresence"
+      | "ProfileContent"
+      | "ProfileBackground"
+      | "DisplayName";
     /** Username Information */
     DataChangeUsername: {
       /** @description New username */
@@ -1670,45 +1689,54 @@ export interface components {
       type: "None";
     }]>;
     /** @description Information about special remote content */
-    Special: {
-      /** @enum {string} */
-      type: "None";
-    } | {
-      /** @enum {string} */
-      type: "GIF";
-    } | ({
-      /** @enum {string} */
-      type: "YouTube";
-      id: string;
-      timestamp?: string | null;
-    }) | {
-      /** @enum {string} */
-      type: "Lightspeed";
-      content_type: components["schemas"]["LightspeedType"];
-      id: string;
-    } | {
-      /** @enum {string} */
-      type: "Twitch";
-      content_type: components["schemas"]["TwitchType"];
-      id: string;
-    } | {
-      /** @enum {string} */
-      type: "Spotify";
-      content_type: string;
-      id: string;
-    } | {
-      /** @enum {string} */
-      type: "Soundcloud";
-    } | {
-      /** @enum {string} */
-      type: "Bandcamp";
-      content_type: components["schemas"]["BandcampType"];
-      id: string;
-    } | {
-      /** @enum {string} */
-      type: "Streamable";
-      id: string;
-    };
+    Special:
+      | {
+        /** @enum {string} */
+        type: "None";
+      }
+      | {
+        /** @enum {string} */
+        type: "GIF";
+      }
+      | ({
+        /** @enum {string} */
+        type: "YouTube";
+        id: string;
+        timestamp?: string | null;
+      })
+      | {
+        /** @enum {string} */
+        type: "Lightspeed";
+        content_type: components["schemas"]["LightspeedType"];
+        id: string;
+      }
+      | {
+        /** @enum {string} */
+        type: "Twitch";
+        content_type: components["schemas"]["TwitchType"];
+        id: string;
+      }
+      | {
+        /** @enum {string} */
+        type: "Spotify";
+        content_type: string;
+        id: string;
+      }
+      | {
+        /** @enum {string} */
+        type: "Soundcloud";
+      }
+      | {
+        /** @enum {string} */
+        type: "Bandcamp";
+        content_type: components["schemas"]["BandcampType"];
+        id: string;
+      }
+      | {
+        /** @enum {string} */
+        type: "Streamable";
+        id: string;
+      };
     /**
      * @description Type of remote Lightspeed.tv content
      * @enum {string}
@@ -2136,7 +2164,12 @@ export interface components {
      * @description Optional fields on server object
      * @enum {string}
      */
-    FieldsServer: "Description" | "Categories" | "SystemMessages" | "Icon" | "Banner";
+    FieldsServer:
+      | "Description"
+      | "Categories"
+      | "SystemMessages"
+      | "Icon"
+      | "Banner";
     /** @description Create new server channel */
     DataCreateServerChannel: {
       /**
@@ -2418,12 +2451,33 @@ export interface components {
      * @description Reason for reporting content (message or server)
      * @enum {string}
      */
-    ContentReportReason: "NoneSpecified" | "Illegal" | "IllegalGoods" | "IllegalExtortion" | "IllegalPornography" | "IllegalHacking" | "ExtremeViolence" | "PromotesHarm" | "UnsolicitedSpam" | "Raid" | "SpamAbuse" | "ScamsFraud" | "Malware" | "Harassment";
+    ContentReportReason:
+      | "NoneSpecified"
+      | "Illegal"
+      | "IllegalGoods"
+      | "IllegalExtortion"
+      | "IllegalPornography"
+      | "IllegalHacking"
+      | "ExtremeViolence"
+      | "PromotesHarm"
+      | "UnsolicitedSpam"
+      | "Raid"
+      | "SpamAbuse"
+      | "ScamsFraud"
+      | "Malware"
+      | "Harassment";
     /**
      * @description Reason for reporting a user
      * @enum {string}
      */
-    UserReportReason: "NoneSpecified" | "UnsolicitedSpam" | "SpamAbuse" | "InappropriateProfile" | "Impersonation" | "BanEvasion" | "Underage";
+    UserReportReason:
+      | "NoneSpecified"
+      | "UnsolicitedSpam"
+      | "SpamAbuse"
+      | "InappropriateProfile"
+      | "Impersonation"
+      | "BanEvasion"
+      | "Underage";
     /** Error */
     "Authifier Error": {
       /** @enum {string} */
@@ -2705,7 +2759,6 @@ export type $defs = Record<string, never>;
 export type external = Record<string, never>;
 
 export interface operations {
-
   /**
    * Query Node
    * @description Fetch the server configuration for this Revolt instance.
@@ -3710,7 +3763,8 @@ export interface operations {
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["LegacyCreateVoiceUserResponse"];
+          "application/json":
+            components["schemas"]["LegacyCreateVoiceUserResponse"];
         };
       };
       /** @description An error occurred. */
@@ -3932,7 +3986,8 @@ export interface operations {
     responses: {
       200: {
         content: {
-          "application/json": components["schemas"]["CreateServerLegacyResponse"];
+          "application/json":
+            components["schemas"]["CreateServerLegacyResponse"];
         };
       };
       /** @description An error occurred. */
@@ -4442,7 +4497,8 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["DataSetServerRolePermission"];
+        "application/json":
+          components["schemas"]["DataSetServerRolePermission"];
       };
     };
     responses: {
