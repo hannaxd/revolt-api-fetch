@@ -1,3 +1,5 @@
+// deno-lint-ignore-file no-explicit-any
+
 import openapi from "openapi-typescript";
 
 const notice =
@@ -100,7 +102,6 @@ Deno.readTextFile("openapi.json").then(async (openapiFile) => {
       }
     }
 
-    // deno-lint-ignore no-explicit-any
     const pathResolve = {} as Record<number, any>;
     for (const path of paths) {
       const segments = path.split("/");
@@ -119,7 +120,7 @@ Deno.readTextFile("openapi.json").then(async (openapiFile) => {
     );
   }
 
-  let toGen = JSON.parse(openapiFile);
+  const toGen = JSON.parse(openapiFile);
   await generateTypes(toGen);
 
   const baseURL = spec["servers"]?.[0]?.["url"];
@@ -132,18 +133,35 @@ Deno.readTextFile("openapi.json").then(async (openapiFile) => {
   );
 });
 
-
-
-//  _    _       _         _    _            _          ______                
-// | |  | |     | |       | |  | |          | |        |___  /                
-// | |  | | __ _| |_   _  | |__| | __ _  ___| | _____     / / ___  _ __   ___ 
+//  _    _       _         _    _            _          ______
+// | |  | |     | |       | |  | |          | |        |___  /
+// | |  | | __ _| |_   _  | |__| | __ _  ___| | _____     / / ___  _ __   ___
 // | |  | |/ _` | | | | | |  __  |/ _` |/ __| |/ / __|   / / / _ \| '_ \ / _ \
 // | |__| | (_| | | |_| | | |  | | (_| | (__|   <\__ \  / /_| (_) | | | |  __/
 // \____/ \__, |_|\__, | |_|  |_|\__,_|\___|_|\_\___/ /_____\___/|_| |_|\___|
-//         __/ |   __/ |                                                     
-//        |___/   |___/                                                      
+//         __/ |   __/ |
+//        |___/   |___/
 
+interface Schema {
+  type?: string;
+  properties?: { [key: string]: any };
+  required?: string[];
+  nullable?: boolean;
+  additionalProperties?: any;
+  items?: any;
+  enum?: any[];
+  anyOf?: Schema[];
+  oneOf?: Schema[];
+  allOf?: Schema[];
+  $ref?: string;
+}
 
+interface MergedSchema extends Schema {
+  type: string;
+  properties: { [key: string]: any };
+  required: string[];
+  nullable: boolean;
+}
 
 async function generateTypes(spec: any) {
   try {
@@ -155,14 +173,18 @@ async function generateTypes(spec: any) {
     const entries = [];
 
     for (const [schemaName, schema] of Object.entries(schemas)) {
-      const typeDefinition = generateTypeDefinition(schemaName, schema);
+      const typeDefinition = generateTypeDefinition(
+        schemaName,
+        schema as Schema,
+        spec,
+      );
       entries.push(typeDefinition);
     }
 
     let output = entries.join("\n") + ";";
     output = output.replace(
       /export type (\w+)/g,
-      (match, typeName) => `export type ${typeName.replace(/\s+/g, "_")}`,
+      (_match, typeName) => `export type ${typeName.replace(/\s+/g, "_")}`,
     );
     // Fix recursive references
     output = output.replace(/components\["schemas"\]\["([^"]+)"\]/g, "$1");
@@ -170,91 +192,135 @@ async function generateTypes(spec: any) {
     output = output.replace(/Authifier Error/g, "Authifier_Error");
     output = output.replace(/ISO8601 Timestamp/g, "ISO8601_Timestamp");
 
-    await Deno.writeTextFile("out/types.ts", output);
+    await Deno.writeTextFile("out/types.ts", notice + output);
   } catch (error) {
     console.error("Error processing spec:", error);
   }
 }
 
-function generateTypeDefinition(schemaName: string, schema: any): string {
+function generateTypeDefinition(
+  schemaName: string,
+  schema: Schema,
+  spec: any,
+): string {
   if (schema.anyOf || schema.oneOf) {
-    const types = (schema.anyOf || schema.oneOf).map((subSchema: any) => formatSchema(subSchema));
-    const unionType = types.join(" | ");
-    return `export type ${schemaName} = ${unionType};`;
-  } else if (schema.allOf) {
-    const types = schema.allOf.map((subSchema: any) => formatSchema(subSchema));
-    const intersectionType = types.join(" & ");
-    return `export type ${schemaName} = ${intersectionType};`;
-  } else if (schema.type === "object") {
-    if (schema.properties || schema.additionalProperties) {
-      const properties = formatObjectProperties(schema);
-      return `export type ${schemaName} = {\n${properties}\n};`;
+    if (schema.properties || schema.additionalProperties !== undefined) {
+      // There are root properties to define globally :()
+      const rootPropertiesSchema: Schema = {
+        type: "object",
+        properties: schema.properties,
+        required: schema.required,
+        additionalProperties: schema.additionalProperties,
+        nullable: schema.nullable,
+      };
+
+      // Generate base type for common properties
+      const baseType = formatSchema(rootPropertiesSchema, spec);
+
+      // Generate union of all variants
+      const variants = (schema.anyOf || schema.oneOf)!.map(
+        (subSchema: Schema) => {
+          return formatSchema(subSchema, spec);
+        },
+      );
+
+      const unionType = variants.join(" | ");
+      // Combine base type with all variants using an intersection
+      return `export type ${schemaName} = ${baseType} & (${unionType});`;
     } else {
-      // Object with no defined properties
-      return `export type ${schemaName} = { [key: string]: unknown };`;
+      // No root properties, yay
+      const types = (schema.anyOf || schema.oneOf)!.map((subSchema: Schema) =>
+        formatSchema(subSchema, spec)
+      );
+      const unionType = types.join(" | ");
+      return `export type ${schemaName} = ${unionType};`;
     }
+  } else if (schema.allOf) {
+    // Handle `allOf` constructs by generating an intersection
+    const types = schema.allOf.map((subSchema: Schema) =>
+      formatSchema(subSchema, spec)
+    );
+    const tsType = types.join(" & ");
+    return `export type ${schemaName} = ${tsType};`;
+  } else if (
+    schema.type === "object" ||
+    schema.properties ||
+    schema.additionalProperties !== undefined
+  ) {
+    const tsType = formatSchema(schema, spec);
+    return `export type ${schemaName} = ${tsType};`;
   } else if (schema.$ref) {
     const refKey = schema.$ref.split("/").pop();
-    return `export type ${schemaName} = components["schemas"]["${refKey}"];`;
+    return `export type ${schemaName} = ${refKey};`;
   } else {
-    const tsType = formatSchema(schema);
+    const tsType = formatSchema(schema, spec);
     return `export type ${schemaName} = ${tsType};`;
   }
 }
 
-function formatSchema(schema: any): string {
+function formatSchema(schema: Schema, spec: any): string {
   if (schema.$ref) {
     const refKey = schema.$ref.split("/").pop();
-    return `components["schemas"]["${refKey}"]`;
+    return refKey!;
   } else if (schema.anyOf || schema.oneOf) {
-    const types = (schema.anyOf || schema.oneOf).map((subSchema: any) => formatSchema(subSchema));
+    const types = (schema.anyOf || schema.oneOf)!.map((subSchema: Schema) =>
+      formatSchema(subSchema, spec)
+    );
     let tsType = types.join(" | ");
     if (schema.nullable) {
       tsType += " | null";
     }
     return tsType;
   } else if (schema.allOf) {
-    const types = schema.allOf.map((subSchema: any) => formatSchema(subSchema));
+    // Generate an intersection type
+    const types = schema.allOf.map((subSchema: Schema) =>
+      formatSchema(subSchema, spec)
+    );
     let tsType = types.join(" & ");
     if (schema.nullable) {
       tsType += " | null";
     }
     return tsType;
-  } else if (schema.type === "object") {
-    if (schema.properties || schema.additionalProperties) {
-      const properties = formatObjectProperties(schema);
-      let tsType = `{\n${properties}\n}`;
-      if (schema.nullable) {
-        tsType += " | null";
-      }
-      return tsType;
-    } else {
-      return `{ [key: string]: unknown }`;
+  } else if (
+    schema.type === "object" ||
+    schema.properties ||
+    schema.additionalProperties !== undefined
+  ) {
+    const properties = formatObjectProperties(schema, spec);
+    let tsType = `{\n${properties}\n}`;
+    if (schema.nullable) {
+      tsType += " | null";
     }
+    return tsType;
   } else if (schema.type === "array") {
-    const itemType = schema.items ? formatSchema(schema.items) : "unknown";
+    const itemType = schema.items
+      ? formatSchema(schema.items, spec)
+      : "unknown";
     let tsType = `${itemType}[]`;
     if (schema.nullable) {
       tsType += " | null";
     }
     return tsType;
   } else if (schema.enum) {
-    const enumValues = schema.enum.map((value: any) => JSON.stringify(value)).join(" | ");
+    const enumValues = schema.enum.map((value: any) => JSON.stringify(value))
+      .join(" | ");
     let tsType = enumValues;
     if (schema.nullable) {
       tsType += " | null";
     }
     return tsType;
-  } else {
+  } else if (schema.type) {
     let tsType = mapPrimitiveType(schema.type);
     if (schema.nullable) {
       tsType += " | null";
     }
     return tsType;
+  } else {
+    return "unknown";
   }
 }
 
-function formatObjectProperties(schema: any): string {
+function formatObjectProperties(schema: Schema, spec: any): string {
   const requiredProperties = schema.required || [];
   const properties: string[] = [];
 
@@ -262,22 +328,27 @@ function formatObjectProperties(schema: any): string {
     properties.push(
       ...Object.entries(schema.properties).map(([key, prop]) => {
         const isRequired = requiredProperties.includes(key);
-        return formatProperty(key, prop, isRequired);
-      })
+        return formatProperty(key, prop, isRequired, spec);
+      }),
     );
   }
 
-  if (schema.additionalProperties) {
-    const valueType = formatSchema(schema.additionalProperties);
+  if (schema.additionalProperties !== undefined) {
+    const valueType = formatSchema(schema.additionalProperties, spec);
     properties.push(`  [key: string]: ${valueType};`);
   }
 
   return properties.join("\n");
 }
 
-function formatProperty(key: string, prop: any, isRequired: boolean): string {
+function formatProperty(
+  key: string,
+  prop: any,
+  isRequired: boolean,
+  spec: any,
+): string {
   const optionalMark = isRequired ? "" : "?";
-  const tsType = formatSchema(prop);
+  const tsType = formatSchema(prop, spec);
   return `  ${key}${optionalMark}: ${tsType};`;
 }
 
@@ -292,6 +363,8 @@ function mapPrimitiveType(type: string): string {
       return "boolean";
     case "null":
       return "null";
+    case "object":
+      return "{ [key: string]: unknown }";
     default:
       return "unknown";
   }
