@@ -1,6 +1,6 @@
 {
   "name": "@rawrxd/revolt-api",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "exports": "./out/mod.ts",
   "tasks": {
     "build": "REWRITE_ANYOF=1 deno -A builder.ts && deno fmt out/"
