@@ -2,6 +2,10 @@
 
 This package contains object types and a fully typed request builder for the Revolt API
 
+### Disclaimer
+
+This thing is very much unstable, I'm working on it.
+
 ### Package Usage
 
 Importing types:
