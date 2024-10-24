@@ -1,0 +1,13 @@
+{
+  "name": "@rawrxd/revolt-api",
+  "version": "0.1.0",
+  "exports": "./out/mod.ts",
+  "tasks": {
+    "build": "REWRITE_ANYOF=1 deno -A builder.ts"
+  },
+  "license": "MIT",
+  "imports": {
+    "@std/path": "jsr:@std/path@^1.0.6",
+    "openapi-typescript": "npm:openapi-typescript@6.7.6"
+  }
+}
