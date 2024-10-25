@@ -1,270 +1,171 @@
-// deno-lint-ignore-file no-explicit-any
-import type { APIRoutes } from "./routes.ts";
+import type { APIRoutes } from './routes.ts';
+import { defaultBaseURL } from './baseURL.ts';
 
-import { defaultBaseURL } from "./baseURL.ts";
-import { pathResolve, queryParams } from "./params.ts";
+export * from './types.ts';
 
-export * from "./types.ts";
+type Methods = APIRoutes['method'];
 
-type Methods = APIRoutes["method"];
-type PickRoutes<Method extends Methods> = APIRoutes & { method: Method };
+type RouteForMethodAndPath<
+  Method extends Methods,
+  Path extends string
+> = Extract<APIRoutes, { method: Method; path: Path }>;
 
-type GetRoutes = PickRoutes<"get">;
-type PatchRoutes = PickRoutes<"patch">;
-type PutRoutes = PickRoutes<"put">;
-type DeleteRoutes = PickRoutes<"delete">;
-type PostRoutes = PickRoutes<"post">;
-
-type Count<
-  Str extends string,
-  SubStr extends string,
-  Matches extends null[] = [],
-> = Str extends `${infer _}${SubStr}${infer After}`
-  ? Count<After, SubStr, [...Matches, null]>
-  : Matches["length"];
-
-/**
- * Get the specific path name of any given path.
- * @param anyPath Any path
- * @returns Specific path
- */
-export function getPathName(anyPath: string): string | undefined {
-  const segments = anyPath.split("/");
-
-  const list =
-    (pathResolve as unknown as Record<string, (string | [string])[]>)[
-      (segments.length - 1).toString()
-    ] || [];
-  for (const entry of list) {
-    let i = 1;
-    const copy = [...segments];
-    for (i; i < segments.length; i++) {
-      if (Array.isArray(entry[i - 1])) {
-        copy[i] = entry[i - 1];
-        continue;
-      } else if (entry[i - 1] !== segments[i]) break;
-    }
-
-    if (i === segments.length) return copy.join("/");
-  }
-}
-
-/**
- * Client configuration options
- */
 export interface Options {
-  /**
-   * Base URL of the Revolt node
-   */
   baseURL: string;
-  /**
-   * Authentication used for requests
-   */
-  authentication: {
-    rauth?: string | undefined;
-    revolt?: { token: string } | string | undefined;
-    headers?: Record<string, string> | undefined;
+  authentication?: {
+    rauth?: string;
+    revolt?: { token: string } | string;
+    headers?: Record<string, string>;
   };
 }
 
-/**
- * API Client
- */
 export class API {
-  private baseURL: Options["baseURL"];
-  private authentication: Options["authentication"];
+  private baseURL: string;
+  private authentication: Options['authentication'];
 
   constructor({ baseURL, authentication }: Partial<Options> = {}) {
     this.baseURL = baseURL || defaultBaseURL;
     this.authentication = authentication || {};
   }
 
-  /**
-   * Generate authentication options.
-   */
   get auth(): Record<string, string> {
     const headers: Record<string, string> = {};
-    if (this.authentication.rauth) {
-      if (typeof this.authentication.rauth === "string") {
-        headers["X-Session-Token"] = this.authentication.rauth;
-      }
-    } else if (this.authentication.revolt) {
-      switch (typeof this.authentication.revolt) {
-        case "string": {
-          headers["X-Bot-Token"] = this.authentication.revolt;
-          break;
-        }
-        case "object": {
-          headers["X-Session-Token"] = this.authentication.revolt.token;
-          break;
-        }
+    if (this.authentication?.rauth) {
+      headers['X-Session-Token'] = this.authentication.rauth;
+    } else if (this.authentication?.revolt) {
+      if (typeof this.authentication.revolt === 'string') {
+        headers['X-Bot-Token'] = this.authentication.revolt;
+      } else {
+        headers['X-Session-Token'] = this.authentication.revolt.token;
       }
     }
 
-    if (this.authentication.headers) {
+    if (this.authentication?.headers) {
       Object.assign(headers, this.authentication.headers);
     }
 
     return headers;
   }
 
-  /**
-   * Send any arbitrary request.
-   * @param method HTTP Method
-   * @param path Path
-   * @param params Body or Query Parameters
-   * @returns Typed Response Data
-   */
   async req<
     Method extends Methods,
-    Routes extends PickRoutes<Method>,
-    Path extends Routes["path"],
-    Route extends Routes & { path: Path; parts: Count<Path, "/"> },
+    Path extends Extract<APIRoutes, { method: Method }>['path'],
+    Route extends RouteForMethodAndPath<Method, Path>,
+    Params = Route extends { params: unknown } ? Route['params'] : undefined,
+    Response = Route extends { response: unknown } ? Route['response'] : void
   >(
     method: Method,
     path: Path,
-    params?: Route["params"],
-    _config?: RequestInit,
-  ): Promise<Route["response"]> {
-    let query: Record<string, any> | undefined;
-    let body: Record<string, any> | undefined;
-    const named = getPathName(path);
+    params?: Params,
+    config?: RequestInit
+  ): Promise<Response> {
+    const url = new URL(path as string, this.baseURL);
+    const headers = this.auth;
 
-    if (named && typeof params === "object") {
-      const route = queryParams[named as keyof typeof queryParams];
-      const allowed_query =
-        (route as unknown as Record<Method, string[]>)[method];
+    let body: string | undefined;
+    let query: URLSearchParams | undefined;
 
-      for (const parameter of Object.keys(params)) {
-        if (allowed_query?.includes(parameter)) {
-          query = {
-            ...(query || {}),
-            [parameter]: (params as Record<any, any>)[parameter],
-          };
-        } else {
-          body = {
-            ...(body || {}),
-            [parameter]: (params as Record<any, any>)[parameter],
-          };
+    if (params && typeof params === 'object') {
+      if (method === 'get' || method === 'delete') {
+        query = new URLSearchParams();
+        for (const [key, value] of Object.entries(params as Record<string, unknown>)) {
+          if (value !== undefined && value !== null) {
+            query.append(key, String(value));
+          }
         }
+      } else {
+        body = JSON.stringify(params);
       }
     }
 
-    const url = new URL(path, this.baseURL);
-    const headers = this.auth;
-
     if (query) {
-      const queryString = new URLSearchParams(query).toString();
-      url.search = queryString;
+      url.search = query.toString();
     }
 
     const response = await fetch(url.toString(), {
-      method: method.toUpperCase() as string,
+      method: method.toUpperCase(),
       headers: {
         ...headers,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body,
+      ...config,
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+    const contentType = response.headers.get('content-type');
+    let responseBody: unknown;
+
+    if (contentType && contentType.includes('application/json')) {
+      responseBody = await response.json();
+    } else {
+      responseBody = await response.text();
     }
 
-    return response.json() as Promise<Route["response"]>;
+    return responseBody as Response;
   }
-
-  // The get, patch, put, delete, and post methods remain the same, replacing Axios calls
-  get<
-    Path extends GetRoutes["path"],
-    Route extends GetRoutes & { path: Path; parts: Count<Path, "/"> },
-  >(
-    path: Path,
-    params: Route["params"],
-    config?: RequestInit,
-  ): Promise<Route["response"]>;
 
   get<
-    Path extends (GetRoutes & { params: undefined })["path"],
-    Route extends GetRoutes & { path: Path; parts: Count<Path, "/"> },
-  >(path: Path): Promise<Route["response"]>;
-
-  get<
-    Path extends GetRoutes["path"],
-    Route extends GetRoutes & { path: Path; parts: Count<Path, "/"> },
+    Path extends Extract<APIRoutes, { method: 'get' }>['path'],
+    Route extends RouteForMethodAndPath<'get', Path>,
+    Params = Route extends { params: unknown } ? Route['params'] : undefined,
+    Response = Route extends { response: unknown } ? Route['response'] : void
   >(
     path: Path,
-    params?: Route["params"] | undefined,
-    config?: RequestInit,
-  ): Promise<Route["response"]> {
-    return this.req("get", path, params as Route["params"], config);
-  }
-
-  patch<
-    Path extends PatchRoutes["path"],
-    Route extends PatchRoutes & { path: Path; parts: Count<Path, "/"> },
-  >(
-    path: Path,
-    params: Route["params"],
-    config?: RequestInit,
-  ): Promise<Route["response"]>;
-
-  patch<
-    Path extends (PatchRoutes & { params: undefined })["path"],
-    Route extends PatchRoutes & { path: Path; parts: Count<Path, "/"> },
-  >(path: Path): Promise<Route["response"]>;
-
-  patch(path: any, params?: any, config?: RequestInit): Promise<any> {
-    return this.req("patch", path, params, config);
-  }
-
-  put<
-    Path extends PutRoutes["path"],
-    Route extends PutRoutes & { path: Path; parts: Count<Path, "/"> },
-  >(
-    path: Path,
-    params: Route["params"],
-    config?: RequestInit,
-  ): Promise<Route["response"]>;
-
-  put<
-    Path extends (PutRoutes & { params: undefined })["path"],
-    Route extends PutRoutes & { path: Path; parts: Count<Path, "/"> },
-  >(path: Path): Promise<Route["response"]>;
-
-  put(path: any, params?: any, config?: RequestInit): Promise<any> {
-    return this.req("put", path, params, config);
-  }
-
-  delete<
-    Path extends DeleteRoutes["path"],
-    Route extends DeleteRoutes & { path: Path; parts: Count<Path, "/"> },
-  >(path: Path, params?: any, config?: RequestInit): Promise<Route["response"]>;
-
-  delete<
-    Path extends (DeleteRoutes & { params: undefined })["path"],
-    Route extends DeleteRoutes & { path: Path; parts: Count<Path, "/"> },
-  >(path: Path, params?: any): Promise<Route["response"]>;
-
-  delete(path: any, params?: any, config?: RequestInit): Promise<any> {
-    return this.req("delete", path, params, config);
+    params?: Params,
+    config?: RequestInit
+  ): Promise<Response> {
+    return this.req('get', path, params, config);
   }
 
   post<
-    Path extends PostRoutes["path"],
-    Route extends PostRoutes & { path: Path; parts: Count<Path, "/"> },
+    Path extends Extract<APIRoutes, { method: 'post' }>['path'],
+    Route extends RouteForMethodAndPath<'post', Path>,
+    Params = Route extends { params: unknown } ? Route['params'] : undefined,
+    Response = Route extends { response: unknown } ? Route['response'] : void
   >(
     path: Path,
-    params: Route["params"],
-    config?: RequestInit,
-  ): Promise<Route["response"]>;
+    params?: Params,
+    config?: RequestInit
+  ): Promise<Response> {
+    return this.req('post', path, params, config);
+  }
 
-  post<
-    Path extends (PostRoutes & { params: undefined })["path"],
-    Route extends PostRoutes & { path: Path; parts: Count<Path, "/"> },
-  >(path: Path): Promise<Route["response"]>;
+  patch<
+    Path extends Extract<APIRoutes, { method: 'patch' }>['path'],
+    Route extends RouteForMethodAndPath<'patch', Path>,
+    Params = Route extends { params: unknown } ? Route['params'] : undefined,
+    Response = Route extends { response: unknown } ? Route['response'] : void
+  >(
+    path: Path,
+    params?: Params,
+    config?: RequestInit
+  ): Promise<Response> {
+    return this.req('patch', path, params, config);
+  }
 
-  post(path: any, params?: any, config?: RequestInit): Promise<any> {
-    return this.req("post", path, params, config);
+  put<
+    Path extends Extract<APIRoutes, { method: 'put' }>['path'],
+    Route extends RouteForMethodAndPath<'put', Path>,
+    Params = Route extends { params: unknown } ? Route['params'] : undefined,
+    Response = Route extends { response: unknown } ? Route['response'] : void
+  >(
+    path: Path,
+    params?: Params,
+    config?: RequestInit
+  ): Promise<Response> {
+    return this.req('put', path, params, config);
+  }
+
+  delete<
+    Path extends Extract<APIRoutes, { method: 'delete' }>['path'],
+    Route extends RouteForMethodAndPath<'delete', Path>,
+    Params = Route extends { params: unknown } ? Route['params'] : undefined,
+    Response = Route extends { response: unknown } ? Route['response'] : void
+  >(
+    path: Path,
+    params?: Params,
+    config?: RequestInit
+  ): Promise<Response> {
+    return this.req('delete', path, params, config);
   }
 }

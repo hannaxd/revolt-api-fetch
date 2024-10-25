@@ -6,13 +6,12 @@
     "build": "REWRITE_ANYOF=1 deno -A builder.ts && deno fmt out/"
   },
   "license": "MIT",
-  "imports": {
-    "@std/path": "jsr:@std/path@^1.0.6",
-    "openapi-typescript": "npm:openapi-typescript@6.7.6"
-  },
   "exclude": [
     "builder.ts",
     "base/",
-    "openapi.json"
+    "openapi.json",
+    "old/",
+    ".github/",
+    ".gitignore"
   ]
 }

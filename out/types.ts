@@ -100,6 +100,10 @@ export type Error =
   } | {
     type: "NotInGroup";
   } | {
+    type: "AlreadyPinned";
+  } | {
+    type: "NotPinned";
+  } | {
     type: "UnknownServer";
   } | {
     type: "InvalidRole";
@@ -153,6 +157,8 @@ export type Error =
   } | {
     type: "InvalidSession";
   } | {
+    type: "NotAuthenticated";
+  } | {
     type: "DuplicateNonce";
   } | {
     type: "NotFound";
@@ -161,6 +167,15 @@ export type Error =
   } | {
     type: "FailedValidation";
     error: string;
+  } | {
+    type: "ProxyError";
+  } | {
+    type: "FileTooSmall";
+  } | {
+    type: "FileTooLarge";
+    max: number;
+  } | {
+    type: "FileTypeNotAllowed";
   } | {
     type: "VosoUnavailable";
   });
@@ -251,7 +266,8 @@ export type FieldsUser =
   | "StatusPresence"
   | "ProfileContent"
   | "ProfileBackground"
-  | "DisplayName";
+  | "DisplayName"
+  | "Internal";
 export type DataChangeUsername = {
   username: string;
   password: string;
@@ -415,6 +431,7 @@ export type Message = {
   };
   interactions?: Interactions;
   masquerade?: Masquerade | null;
+  pinned?: boolean | null;
   flags?: number;
 };
 export type Member = {
@@ -471,6 +488,14 @@ export type SystemMessage = {
   type: "channel_ownership_changed";
   from: string;
   to: string;
+} | {
+  type: "message_pinned";
+  id: string;
+  by: string;
+} | {
+  type: "message_unpinned";
+  id: string;
+  by: string;
 };
 export type Embed = {
   type: "Website";
@@ -533,6 +558,10 @@ export type Special = {
   content_type: BandcampType;
   id: string;
 } | {
+  type: "AppleMusic";
+  album_id: string;
+  track_id?: string | null;
+} | {
   type: "Streamable";
   id: string;
 };
@@ -589,7 +618,8 @@ export type BulkMessageResponse = Message[] | {
 };
 export type MessageSort = "Relevance" | "Latest" | "Oldest";
 export type DataMessageSearch = {
-  query: string;
+  query?: string | null;
+  pinned?: boolean | null;
   limit?: number | null;
   before?: string | null;
   after?: string | null;
@@ -629,6 +659,7 @@ export type Webhook = {
   id: string;
   name: string;
   avatar?: File | null;
+  creator_id: string;
   channel_id: string;
   permissions: number;
   token?: string | null;
@@ -1045,4 +1076,18 @@ export type ChannelUnread = {
 export type ChannelCompositeKey = {
   channel: string;
   user: string;
+};
+export type DataEditWebhook = {
+  name?: string | null;
+  avatar?: string | null;
+  permissions?: number | null;
+  remove?: FieldsWebhook[];
+};
+export type FieldsWebhook = "Avatar";
+export type ResponseWebhook = {
+  id: string;
+  name: string;
+  avatar?: string | null;
+  channel_id: string;
+  permissions: number;
 };

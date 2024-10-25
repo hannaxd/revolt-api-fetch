@@ -47,4 +47,7 @@ After that, rebuild the base files by running the build task through deno.
 
 ### Attribution
 
-The `builder.ts` and `base/mod.ts` files are taken from [@insertish/oapi](https://github.com/insertish/oapi) and the `cli.js` and `src/index.ts` files respectively and adapted to run on deno and use the web standard [fetch api](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API).
+This repository currently includes [revolt](https://revolt.chat)s openapi.json file. This file is licensed under the AGPLv3 and powers the entire generator, but isn't shipped with the final result.
+
+Revolt: https://revolt.chat
+Backend Source: https://github.com/revoltchat/backend
